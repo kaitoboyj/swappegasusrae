@@ -3,9 +3,9 @@ import { ArrowDownUp, Settings, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TokenSearch } from './TokenSearch';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -35,7 +35,8 @@ export const SwapInterface = ({
   defaultToToken,
   onFromTokenChange
 }: SwapInterfaceProps = {}) => {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const [fromToken, setFromToken] = useState<Token | undefined>(defaultFromToken);
   const [toToken, setToToken] = useState<Token | undefined>(defaultToToken);
   const [fromAmount, setFromAmount] = useState('');
@@ -104,8 +105,8 @@ export const SwapInterface = ({
               setFromBalanceUSD(0);
             }
           }
-        } catch (rpcError) {
-          console.error('RPC fallback also failed:', rpcError);
+      } catch (rpcError) {
+          console.error('Error fetching balance from RPC:', rpcError);
           setFromBalance(0);
           setFromBalanceUSD(0);
         }
