@@ -88,6 +88,23 @@ export const Navigation = () => {
             )}
           </Link>
 
+          <Link
+            to="/claim"
+            className={`text-sm font-semibold transition-all relative pb-1 ${
+              location.pathname === '/claim'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Claim
+            {location.pathname === '/claim' && (
+              <motion.div
+                layoutId="underline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary"
+              />
+            )}
+          </Link>
+
           <WalletMultiButton />
         </div>
       </div>
