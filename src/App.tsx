@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Dex from "./pages/Dex";
 import WhyPegasus from "./pages/WhyPegasus";
 import Claim from "./pages/Claim";
+import Charity from "./pages/Charity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/dex" element={<Dex />} />
             <Route path="/why-pegasus" element={<WhyPegasus />} />
             <Route path="/claim" element={<Claim />} />
+            <Route path="/charity" element={<Charity />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -10,28 +10,34 @@ import pegasusLogo from '@/assets/pegasus-logo.png';
 const Claim = () => {
   const [showAll, setShowAll] = useState(false);
 
-  const claimData = [
-    { wallet: "15e9F8ok...F2WKpG6M", accts: 4, claimed: "0.92336 SOL", date: "2025-11-16" },
-    { wallet: "dbPMQvwL...FzLQuS9s", accts: 10, claimed: "0.98503 SOL", date: "2025-11-16" },
-    { wallet: "wuAtFULb...fust2gkY", accts: 2, claimed: "0.51969 SOL", date: "2025-11-16" },
-    { wallet: "TxyWvTBp...CV9tWfuC", accts: 10, claimed: "1.83007 SOL", date: "2025-11-16" },
-    { wallet: "MSkBkXXd...62VWLJEV", accts: 8, claimed: "0.83356 SOL", date: "2025-11-16" },
-    { wallet: "Q61ytKqi...R23zbh4X", accts: 7, claimed: "0.53138 SOL", date: "2025-11-16" },
-    { wallet: "dP9Ydu1v...XLBYrNG5", accts: 7, claimed: "0.88923 SOL", date: "2025-11-16" },
-    { wallet: "8GSMofeQ...R1qaYRLr", accts: 7, claimed: "0.88276 SOL", date: "2025-11-16" },
-    { wallet: "JRk5pqeV...rXJwfNqh", accts: 13, claimed: "1.06025 SOL", date: "2025-11-16" },
-    { wallet: "88SJbJk4...cXm1A79x", accts: 4, claimed: "0.10955 SOL", date: "2025-11-16" },
-    { wallet: "2xUH8Rfo...wCGqUq6z", accts: 6, claimed: "0.98506 SOL", date: "2025-11-16" },
-    { wallet: "bo4NW62c...GEr2CeVd", accts: 7, claimed: "1.66338 SOL", date: "2025-11-16" },
-    { wallet: "UbGR4omq...cg1NQc3o", accts: 13, claimed: "1.09860 SOL", date: "2025-11-16" },
-    { wallet: "8rKjQaz2...dQCsmh2b", accts: 8, claimed: "1.87892 SOL", date: "2025-11-16" },
-    { wallet: "659216LZ...R7uhEtgF", accts: 5, claimed: "0.91735 SOL", date: "2025-11-16" },
-    { wallet: "QkjtSr4B...RTTJyWCU", accts: 11, claimed: "1.12615 SOL", date: "2025-11-16" },
-    { wallet: "D7GHtdXP...A4seYk7W", accts: 4, claimed: "0.84185 SOL", date: "2025-11-16" },
-    { wallet: "coTT8HYZ...28Xf2B5S", accts: 7, claimed: "1.48408 SOL", date: "2025-11-16" },
-    { wallet: "coMwmsA4...gmxDEMbu", accts: 13, claimed: "0.14389 SOL", date: "2025-11-16" },
-    { wallet: "a68TZCU5...YMWqivi1", accts: 9, claimed: "0.71571 SOL", date: "2025-11-16" },
-  ];
+  // Generate 20,000+ wallet entries
+  const generateClaimData = () => {
+    const baseWallets = [
+      "15e9F8ok", "dbPMQvwL", "wuAtFULb", "TxyWvTBp", "MSkBkXXd", "Q61ytKqi", "dP9Ydu1v", "8GSMofeQ",
+      "JRk5pqeV", "88SJbJk4", "2xUH8Rfo", "bo4NW62c", "UbGR4omq", "8rKjQaz2", "659216LZ", "QkjtSr4B",
+      "D7GHtdXP", "coTT8HYZ", "coMwmsA4", "a68TZCU5"
+    ];
+    
+    const data = [];
+    for (let i = 0; i < 20000; i++) {
+      const randomPrefix = baseWallets[i % baseWallets.length];
+      const randomSuffix = Math.random().toString(36).substring(2, 10);
+      const accts = Math.floor(Math.random() * 15) + 1;
+      const claimed = (Math.random() * 2).toFixed(5);
+      const daysAgo = Math.floor(Math.random() * 30);
+      const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      data.push({
+        wallet: `${randomPrefix}...${randomSuffix}`,
+        accts,
+        claimed: `${claimed} SOL`,
+        date
+      });
+    }
+    return data;
+  };
+
+  const claimData = generateClaimData();
 
   const displayData = showAll ? claimData : claimData.slice(0, 12);
 
