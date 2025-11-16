@@ -7,7 +7,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 // Import wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-const QUICKNODE_RPC = 'https://solitary-cosmopolitan-lambo.solana-mainnet.quiknode.pro/f9bf6bb930b87de47704663c615463c78a05d495/';
+const QUICKNODE_RPC = 'https://few-greatest-card.solana-mainnet.quiknode.pro/96ca284c1240d7f288df66b70e01f8367ba78b2b';
 
 interface WalletProviderProps {
   children: ReactNode;
