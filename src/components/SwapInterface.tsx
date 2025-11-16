@@ -186,22 +186,89 @@ export const SwapInterface = ({
   };
 
   const handleSwap = async () => {
-    if (!connected) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    if (!fromToken || !toToken || !fromAmount) {
-      toast.error('Please select tokens and enter amount');
+    if (!fromToken || !toToken || !fromAmount || !publicKey || !sendTransaction) {
+      toast.error('Please connect wallet and enter amount');
       return;
     }
 
     setIsSwapping(true);
     try {
-      // TODO: Implement Jupiter swap logic
-      toast.success('Swap initiated! (Demo mode)');
-    } catch (error) {
-      toast.error('Swap failed. Please try again.');
+      console.log('Starting swap process...');
+      
+      const amountInSmallestUnit = Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals));
+      const slippageBps = Math.floor(parseFloat(slippage) * 100); // Convert to basis points
+
+      // Get quote from Jupiter
+      const quoteResponse = await fetch(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${amountInSmallestUnit}&slippageBps=${slippageBps}`
+      );
+      
+      if (!quoteResponse.ok) {
+        throw new Error('Failed to get swap quote');
+      }
+
+      const quoteData = await quoteResponse.json();
+      console.log('Quote received:', quoteData);
+
+      // Get swap transaction
+      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse: quoteData,
+          userPublicKey: publicKey.toString(),
+          wrapAndUnwrapSol: true,
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: 'auto'
+        })
+      });
+
+      if (!swapResponse.ok) {
+        throw new Error('Failed to get swap transaction');
+      }
+
+      const { swapTransaction } = await swapResponse.json();
+      console.log('Swap transaction received');
+
+      // Deserialize and send transaction
+      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
+      toast.info('Confirm transaction in your wallet...');
+
+      const signature = await sendTransaction(transaction, connection, {
+        skipPreflight: false,
+        maxRetries: 3,
+        preflightCommitment: 'confirmed'
+      });
+
+      toast.info('Confirming swap...');
+      console.log('Transaction signature:', signature);
+
+      // Wait for confirmation
+      const latestBlockhash = await connection.getLatestBlockhash('finalized');
+      await connection.confirmTransaction({
+        signature,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+      }, 'confirmed');
+
+      toast.success('Swap completed successfully!');
+      console.log('Swap confirmed');
+
+      // Reset form
+      setFromAmount('');
+      setToAmount('');
+
+    } catch (error: any) {
+      console.error('Swap error:', error);
+      
+      let errorMessage = 'Swap failed';
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSwapping(false);
     }
