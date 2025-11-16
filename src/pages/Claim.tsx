@@ -5,10 +5,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useState } from 'react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import pegasusLogo from '@/assets/pegasus-logo.png';
 
+const CLAIM_AMOUNT = 0.1; // 0.1 SOL per claim
+const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj'; // Using charity wallet as example
+
 const Claim = () => {
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
   const [showAll, setShowAll] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   // Generate 20,000+ wallet entries
   const generateClaimData = () => {
@@ -41,6 +51,64 @@ const Claim = () => {
 
   const displayData = showAll ? claimData : claimData.slice(0, 12);
 
+  const handleClaimSOL = async () => {
+    if (!publicKey || !sendTransaction) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+
+    try {
+      setIsClaiming(true);
+      console.log('Starting claim process...');
+
+      const faucetPubkey = new PublicKey(FAUCET_WALLET);
+      const amountLamports = Math.floor(CLAIM_AMOUNT * LAMPORTS_PER_SOL);
+
+      // Create transaction to send SOL from faucet to user
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: faucetPubkey,
+          toPubkey: publicKey,
+          lamports: amountLamports
+        })
+      );
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      console.log('Sending claim transaction...');
+      const signature = await sendTransaction(transaction, connection, {
+        skipPreflight: false,
+        maxRetries: 3,
+        preflightCommitment: 'confirmed'
+      });
+
+      toast.info('Confirming claim...');
+      
+      await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      }, 'confirmed');
+
+      toast.success(`Successfully claimed ${CLAIM_AMOUNT} SOL!`);
+      console.log('Claim confirmed:', signature);
+
+    } catch (error: any) {
+      console.error('Claim error:', error);
+      
+      let errorMessage = 'Claim failed';
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <Navigation />
@@ -71,8 +139,14 @@ const Claim = () => {
               Proof-of-claim • Global availability • ~3918 TPS
             </p>
 
-            <Button size="lg" className="mb-4 text-lg px-12 py-6 h-auto">
-              Claim SOL
+            <Button 
+              size="lg" 
+              className="mb-4 text-lg px-12 py-6 h-auto"
+              onClick={handleClaimSOL}
+              disabled={!publicKey || isClaiming}
+            >
+              {isClaiming && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+              {isClaiming ? 'Claiming...' : 'Claim SOL'}
             </Button>
 
             <p className="text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors">
