@@ -124,8 +124,8 @@ export const SwapInterface = ({
         const response = await fetch(`https://lite-api.jup.ag/price/v3?ids=${token.address}`);
         const data = await response.json();
         
-        if (data[token.address] && data[token.address].price) {
-          setter(data[token.address].price);
+        if (data[token.address] && data[token.address].usdPrice) {
+          setter(data[token.address].usdPrice);
         } else {
           setter(0);
         }
