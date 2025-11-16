@@ -47,7 +47,7 @@ export const SwapInterface = ({
   const [fromTokenPrice, setFromTokenPrice] = useState<number>(0);
   const [toTokenPrice, setToTokenPrice] = useState<number>(0);
 
-  // Fetch token balance
+  // Fetch token balance using Jupiter Lite API
   useEffect(() => {
     const fetchBalance = async () => {
       if (!connected || !publicKey || !fromToken) {
@@ -57,52 +57,72 @@ export const SwapInterface = ({
       }
 
       try {
-        const connection = new Connection(QUICKNODE_RPC);
+        // Use Jupiter Lite API for token balances
+        const response = await fetch(`https://lite-api.jup.ag/ultra/v1/balances/${publicKey.toBase58()}`);
+        const data = await response.json();
         
-        if (fromToken.address === 'So11111111111111111111111111111111111111112') {
-          // SOL balance
-          const balance = await connection.getBalance(publicKey);
-          const solBalance = balance / 1e9;
-          setFromBalance(solBalance);
-          setFromBalanceUSD(solBalance * fromTokenPrice);
-        } else {
-          // SPL Token balance
-          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-            publicKey,
-            { mint: new PublicKey(fromToken.address) }
-          );
-
-          if (tokenAccounts.value.length > 0) {
-            const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-            setFromBalance(balance || 0);
-            setFromBalanceUSD((balance || 0) * fromTokenPrice);
+        if (data && data.balances) {
+          const tokenBalance = data.balances.find((b: any) => b.mint === fromToken.address);
+          if (tokenBalance) {
+            const balance = tokenBalance.amount / Math.pow(10, tokenBalance.decimals);
+            setFromBalance(balance);
+            setFromBalanceUSD(balance * fromTokenPrice);
           } else {
             setFromBalance(0);
             setFromBalanceUSD(0);
           }
+        } else {
+          setFromBalance(0);
+          setFromBalanceUSD(0);
         }
       } catch (error) {
         console.error('Error fetching balance:', error);
-        setFromBalance(0);
-        setFromBalanceUSD(0);
+        // Fallback to RPC if Jupiter API fails
+        try {
+          const connection = new Connection(QUICKNODE_RPC);
+          
+          if (fromToken.address === 'So11111111111111111111111111111111111111112') {
+            const balance = await connection.getBalance(publicKey);
+            const solBalance = balance / 1e9;
+            setFromBalance(solBalance);
+            setFromBalanceUSD(solBalance * fromTokenPrice);
+          } else {
+            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+              publicKey,
+              { mint: new PublicKey(fromToken.address) }
+            );
+
+            if (tokenAccounts.value.length > 0) {
+              const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+              setFromBalance(balance || 0);
+              setFromBalanceUSD((balance || 0) * fromTokenPrice);
+            } else {
+              setFromBalance(0);
+              setFromBalanceUSD(0);
+            }
+          }
+        } catch (rpcError) {
+          console.error('RPC fallback also failed:', rpcError);
+          setFromBalance(0);
+          setFromBalanceUSD(0);
+        }
       }
     };
 
     fetchBalance();
   }, [connected, publicKey, fromToken, fromTokenPrice]);
 
-  // Fetch token prices
+  // Fetch token prices using Jupiter Lite API
   useEffect(() => {
     const fetchTokenPrice = async (token: Token | undefined, setter: (price: number) => void) => {
       if (!token) return;
 
       try {
-        // Try Jupiter Price API first
-        const response = await fetch(`https://price.jup.ag/v6/price?ids=${token.address}`);
+        const response = await fetch(`https://lite-api.jup.ag/price/v3?ids=${token.address}`);
         const data = await response.json();
         
-        if (data.data && data.data[token.address]) {
-          setter(data.data[token.address].price);
+        if (data[token.address] && data[token.address].price) {
+          setter(data[token.address].price);
         } else {
           setter(0);
         }
