@@ -28,7 +28,7 @@ interface SwapInterfaceProps {
   onFromTokenChange?: (token: Token) => void;
 }
 
-const QUICKNODE_RPC = 'https://solitary-cosmopolitan-lambo.solana-mainnet.quiknode.pro/f9bf6bb930b87de47704663c615463c78a05d495/';
+const QUICKNODE_RPC = 'https://few-greatest-card.solana-mainnet.quiknode.pro/96ca284c1240d7f288df66b70e01f8367ba78b2b';
 
 export const SwapInterface = ({
   defaultFromToken,
@@ -61,20 +61,23 @@ export const SwapInterface = ({
         const response = await fetch(`https://lite-api.jup.ag/ultra/v1/balances/${publicKey.toBase58()}`);
         const data = await response.json();
         
-        if (data && data.balances) {
-          const tokenBalance = data.balances.find((b: any) => b.mint === fromToken.address);
-          if (tokenBalance) {
-            const balance = tokenBalance.amount / Math.pow(10, tokenBalance.decimals);
-            setFromBalance(balance);
-            setFromBalanceUSD(balance * fromTokenPrice);
-          } else {
-            setFromBalance(0);
-            setFromBalanceUSD(0);
+        // Jupiter API returns tokens keyed by symbol (SOL) or address
+        let balance = 0;
+        
+        if (fromToken.address === 'So11111111111111111111111111111111111111112') {
+          // SOL is returned with "SOL" key
+          if (data.SOL && data.SOL.uiAmount) {
+            balance = data.SOL.uiAmount;
           }
         } else {
-          setFromBalance(0);
-          setFromBalanceUSD(0);
+          // Other tokens are keyed by their address
+          if (data[fromToken.address] && data[fromToken.address].uiAmount) {
+            balance = data[fromToken.address].uiAmount;
+          }
         }
+        
+        setFromBalance(balance);
+        setFromBalanceUSD(balance * fromTokenPrice);
       } catch (error) {
         console.error('Error fetching balance:', error);
         // Fallback to RPC if Jupiter API fails
