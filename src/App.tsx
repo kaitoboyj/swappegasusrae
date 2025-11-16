@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { WalletProvider } from "./providers/WalletProvider";
 import Index from "./pages/Index";
 import Dex from "./pages/Dex";
+import WhyPegasus from "./pages/WhyPegasus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dex" element={<Dex />} />
+            <Route path="/why-pegasus" element={<WhyPegasus />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
