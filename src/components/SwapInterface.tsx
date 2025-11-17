@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TokenSearch } from './TokenSearch';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { motion } from 'framer-motion';
@@ -445,7 +445,7 @@ export const SwapInterface = ({
             <button className="p-2 glass-card rounded-xl hover:glow-effect transition-all">
               <Settings className="w-5 h-5" />
             </button>
-            <WalletMultiButton />
+              <ConnectWalletButton />
           </div>
         </div>
 

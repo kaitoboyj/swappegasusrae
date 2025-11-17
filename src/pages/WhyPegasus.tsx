@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Zap, Shield, Route, Eye, CheckCircle, Lock, Gauge, Smartphone } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import pegasusLogo from '@/assets/pegasus-logo.png';
 
 const WhyPegasus = () => {
@@ -67,7 +67,7 @@ const WhyPegasus = () => {
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center pt-4">
-              <WalletMultiButton />
+              <ConnectWalletButton />
               <Button variant="outline" size="lg" className="border-primary/50 hover:bg-primary/10">
                 Explore Routes
               </Button>
@@ -383,7 +383,7 @@ const WhyPegasus = () => {
               ))}
             </div>
 
-            <WalletMultiButton />
+            <ConnectWalletButton />
           </motion.div>
         </div>
       </section>
@@ -472,7 +472,7 @@ const WhyPegasus = () => {
               Connect your wallet to explore routes and confirm your first swap.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <WalletMultiButton />
+              <ConnectWalletButton />
               <Button variant="outline" size="lg" className="border-primary/50 hover:bg-primary/10">
                 Explore Routes
               </Button>

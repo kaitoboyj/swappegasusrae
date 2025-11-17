@@ -3,7 +3,7 @@ import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -349,7 +349,7 @@ const Claim = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Connect your wallet to start claiming free SOL from empty token accounts.
           </p>
-          <WalletMultiButton />
+              <ConnectWalletButton />
         </div>
       </section>
     </div>

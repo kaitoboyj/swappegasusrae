@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { motion } from 'framer-motion';
 import pegasusLogo from '@/assets/pegasus-logo.png';
 
@@ -105,24 +105,7 @@ export const Navigation = () => {
             )}
           </Link>
 
-          <Link
-            to="/charity"
-            className={`text-sm font-semibold transition-all relative pb-1 ${
-              location.pathname === '/charity'
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Charity
-            {location.pathname === '/charity' && (
-              <motion.div
-                layoutId="underline"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary"
-              />
-            )}
-          </Link>
-
-          <WalletMultiButton />
+          <ConnectWalletButton />
         </div>
       </div>
     </nav>
