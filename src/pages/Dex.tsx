@@ -81,9 +81,9 @@ const Dex = () => {
               transition={{ delay: 0.1 }}
               className="lg:col-span-8 order-1 lg:order-2"
             >
-              <div className="relative min-h-[500px] lg:min-h-[600px]">
+              <div className="relative min-h-[400px] lg:min-h-[600px]">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-secondary to-accent rounded-2xl opacity-20 blur-xl animate-pulse-glow" />
-                <div className="relative glass-card rounded-2xl overflow-hidden h-[500px] lg:h-[600px]">
+                <div className="relative glass-card rounded-2xl overflow-hidden h-[400px] lg:h-[600px]">
                   <iframe
                     key={dexScreenerToken}
                     src={`https://dexscreener.com/solana/${dexScreenerToken}?embed=1&theme=dark&trades=0&info=0`}

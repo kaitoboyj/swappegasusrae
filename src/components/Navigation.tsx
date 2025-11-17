@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { motion } from 'framer-motion';
 import pegasusLogo from '@/assets/pegasus-logo.png';
 
 export const Navigation = () => {
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 animated-gradient-nav backdrop-blur-xl border-b border-white/10">
@@ -35,8 +37,8 @@ export const Navigation = () => {
           </h1>
         </Link>
 
-        {/* Navigation Links & Wallet */}
-        <div className="flex items-center gap-6">
+        {/* Desktop Navigation Links & Wallet */}
+        <div className="hidden md:flex items-center gap-6">
           <Link
             to="/"
             className={`text-sm font-semibold transition-all relative pb-1 ${
@@ -107,7 +109,73 @@ export const Navigation = () => {
 
           <ConnectWalletButton />
         </div>
+
+        {/* Mobile menu toggle */}
+        <button
+          className="md:hidden p-2 glass-card rounded-xl"
+          aria-label="Toggle menu"
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          <span className="block w-5 h-[2px] bg-foreground mb-1"></span>
+          <span className="block w-5 h-[2px] bg-foreground mb-1"></span>
+          <span className="block w-5 h-[2px] bg-foreground"></span>
+        </button>
       </div>
+
+      {/* Mobile menu panel */}
+      {mobileOpen && (
+        <div className="md:hidden bg-background/80 backdrop-blur-xl border-t border-white/10">
+          <div className="container mx-auto px-4 py-3 flex flex-col gap-3">
+            <Link
+              to="/"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Swap
+            </Link>
+            <Link
+              to="/dex"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/dex'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              DEX
+            </Link>
+            <Link
+              to="/why-pegasus"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/why-pegasus'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Why Pegasus
+            </Link>
+            <Link
+              to="/claim"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/claim'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Claim
+            </Link>
+            <div className="pt-2">
+              <ConnectWalletButton />
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

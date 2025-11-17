@@ -462,15 +462,15 @@ export const SwapInterface = ({
             )}
           </div>
           <div className="glass-card p-4 rounded-2xl">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <TokenSearch selectedToken={fromToken} onSelectToken={handleFromTokenSelect} />
-              <div className="flex-1 text-right">
+              <div className="flex-1 text-left sm:text-right w-full">
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={fromAmount}
                   onChange={(e) => setFromAmount(e.target.value)}
-                  className="text-3xl font-bold bg-transparent border-none focus-visible:ring-0 p-0 text-right"
+                  className="w-full text-2xl sm:text-3xl font-bold bg-transparent border-none focus-visible:ring-0 p-0 text-left sm:text-right"
                 />
                 {connected && publicKey && fromAmount && fromTokenPrice > 0 && (
                   <div className="text-xs text-muted-foreground mt-1">
@@ -525,15 +525,15 @@ export const SwapInterface = ({
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Buying</label>
           <div className="glass-card p-4 rounded-2xl">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <TokenSearch selectedToken={toToken} onSelectToken={handleToTokenSelect} />
-              <div className="flex-1 text-right">
+              <div className="flex-1 text-left sm:text-right w-full">
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={toAmount}
                   readOnly
-                  className="text-3xl font-bold bg-transparent border-none focus-visible:ring-0 p-0 text-right"
+                  className="w-full text-2xl sm:text-3xl font-bold bg-transparent border-none focus-visible:ring-0 p-0 text-left sm:text-right"
                 />
                 {connected && publicKey && toAmount && toTokenPrice > 0 && (
                   <div className="text-xs text-muted-foreground mt-1">
