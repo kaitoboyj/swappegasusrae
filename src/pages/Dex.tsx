@@ -42,19 +42,19 @@ const Dex = () => {
       <PegasusAnimation />
       <Navigation />
 
-      <div className="relative z-10 pt-24 pb-8">
+      <div className="relative z-10 pt-20 md:pt-24 pb-8">
         <div className="container mx-auto px-4">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 text-center"
+            className="mb-4 sm:mb-6 text-center"
           >
             <div className="flex items-center justify-center gap-3 mb-2">
               <TrendingUp className="w-8 h-8 text-primary" />
-              <h1 className="text-4xl font-extrabold text-gradient">DEX Trading</h1>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gradient">DEX Trading</h1>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Trade and analyze tokens in real-time
             </p>
           </motion.div>
@@ -81,9 +81,9 @@ const Dex = () => {
               transition={{ delay: 0.1 }}
               className="lg:col-span-8 order-1 lg:order-2"
             >
-              <div className="relative min-h-[400px] lg:min-h-[600px]">
+              <div className="relative min-h-[360px] sm:min-h-[400px] lg:min-h-[600px]">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-secondary to-accent rounded-2xl opacity-20 blur-xl animate-pulse-glow" />
-                <div className="relative glass-card rounded-2xl overflow-hidden h-[400px] lg:h-[600px]">
+                <div className="relative glass-card rounded-2xl overflow-hidden h-[360px] sm:h-[400px] lg:h-[600px]">
                   <iframe
                     key={dexScreenerToken}
                     src={`https://dexscreener.com/solana/${dexScreenerToken}?embed=1&theme=dark&trades=0&info=0`}

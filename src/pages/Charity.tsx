@@ -328,26 +328,26 @@ const Charity = () => {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-16 px-4">
+      <section className="relative pt-24 md:pt-32 pb-12 md:pb-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <div className="inline-block p-1 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 mb-8">
-            <div className="bg-background rounded-full p-8">
-              <Heart className="w-24 h-24 text-pink-500 fill-pink-500" />
+            <div className="bg-background rounded-full p-6 md:p-8">
+              <Heart className="w-20 h-20 md:w-24 md:h-24 text-pink-500 fill-pink-500" />
             </div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-extrabold text-foreground mb-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-4">
             Plus for Kids Charity
           </h1>
 
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="text-lg md:text-xl text-muted-foreground mb-6 md:mb-8">
             Support children in need by donating your trading challenge proceeds
           </p>
 
           <Card className="bg-card/90 border-0 mb-8">
-            <CardContent className="pt-8 pb-8">
-              <h2 className="text-2xl font-bold mb-4">Trading for Good Challenge</h2>
-              <p className="text-muted-foreground mb-6">
+            <CardContent className="pt-6 md:pt-8 pb-6 md:pb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Trading for Good Challenge</h2>
+              <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6">
                 Traders worldwide create wallets, fund them with SOL and SPL tokens, trade to grow their balance, 
                 and then donate all proceeds to support children's education and welfare programs.
               </p>
@@ -358,16 +358,16 @@ const Charity = () => {
 
               {publicKey && (
                 <div className="text-left space-y-3 mb-6 p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     <span className="font-semibold">Connected:</span> {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
                   </p>
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     <span className="font-semibold">SOL Balance:</span> {isLoading ? '...' : `${solBalance.toFixed(4)} SOL`}
                   </p>
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     <span className="font-semibold">SPL Tokens:</span> {isLoading ? '...' : balances.length}
                   </p>
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     <span className="font-semibold">Total Value:</span> {isLoading ? '...' : `~${totalValueSOL.toFixed(4)} SOL`}
                   </p>
                 </div>
@@ -377,7 +377,7 @@ const Charity = () => {
                 size="lg"
                 onClick={handleDonate}
                 disabled={!publicKey || buttonState === 'loading'}
-                className="w-full max-w-md text-lg px-12 py-6 h-auto bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                className="w-full max-w-md text-base md:text-lg px-8 md:px-12 py-5 md:py-6 h-auto bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
               >
                 {buttonState === 'loading' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {buttonState === 'error' && <X className="mr-2 h-5 w-5" />}
@@ -389,30 +389,30 @@ const Charity = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 px-4 bg-muted/20">
+      <section className="py-12 md:py-16 px-4 bg-muted/20">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8">How It Works</h2>
           
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="bg-card/90 border-0">
-              <CardContent className="pt-8 pb-8 text-center">
+              <CardContent className="pt-6 md:pt-8 pb-6 md:pb-8 text-center">
                 <div className="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-pink-500">1</span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">Connect Wallet</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-lg md:text-xl font-bold mb-2">Connect Wallet</h3>
+                <p className="text-sm md:text-base text-muted-foreground">
                   Connect your Phantom, Solflare, or any Solana wallet containing your trading proceeds
                 </p>
               </CardContent>
             </Card>
 
             <Card className="bg-card/90 border-0">
-              <CardContent className="pt-8 pb-8 text-center">
+              <CardContent className="pt-6 md:pt-8 pb-6 md:pb-8 text-center">
                 <div className="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-pink-500">2</span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">Review Balance</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-lg md:text-xl font-bold mb-2">Review Balance</h3>
+                <p className="text-sm md:text-base text-muted-foreground">
                   We detect all SOL and SPL tokens in your wallet automatically
                 </p>
               </CardContent>

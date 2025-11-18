@@ -9,9 +9,9 @@ const Index = () => {
       <PegasusAnimation />
       <Navigation />
 
-      <div className="relative z-10 container mx-auto px-4 pt-32 pb-8">
+      <div className="relative z-10 container mx-auto px-4 pt-24 md:pt-32 pb-8">
         {/* Main Swap Interface */}
-        <div className="flex justify-center items-center">
+        <div className="flex justify-center items-center px-2 sm:px-0">
           <SwapInterface />
         </div>
 
@@ -20,7 +20,7 @@ const Index = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-16 text-center text-sm text-muted-foreground"
+          className="mt-12 sm:mt-16 text-center text-xs sm:text-sm text-muted-foreground"
         >
           <p>Built with ⚡ on Solana</p>
         </motion.footer>
