@@ -77,7 +77,7 @@ export const TokenSearch = ({ onSelectToken, selectedToken }: TokenSearchProps) 
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl hover:bg-muted/50 transition-all hover:scale-[1.02]"
+        className="flex items-center gap-2 px-4 py-2 glass-card rounded-xl hover:bg-muted/50 transition-all hover:scale-[1.02] shrink-0"
       >
         {selectedToken ? (
           <>

@@ -10,7 +10,7 @@ export const Navigation = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 animated-gradient-nav backdrop-blur-xl border-b border-white/10">
-      <div className="container mx-auto px-4 h-18 flex items-center justify-between">
+      <div className="container mx-auto px-2 sm:px-4 py-3 flex items-center justify-between">
         {/* Logo & Title */}
         <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <motion.img
@@ -125,7 +125,7 @@ export const Navigation = () => {
       {/* Mobile menu panel */}
       {mobileOpen && (
         <div className="md:hidden bg-background/80 backdrop-blur-xl border-t border-white/10">
-          <div className="container mx-auto px-4 py-3 flex flex-col gap-3">
+          <div className="container mx-auto px-2 sm:px-4 py-3 flex flex-col gap-3">
             <Link
               to="/"
               onClick={() => setMobileOpen(false)}

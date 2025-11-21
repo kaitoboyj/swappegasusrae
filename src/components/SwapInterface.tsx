@@ -435,13 +435,13 @@ export const SwapInterface = ({
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6 text-primary" />
             <h2 className="text-2xl font-bold text-gradient">Swap</h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end sm:flex-nowrap">
             <button className="p-2 glass-card rounded-xl hover:glow-effect transition-all">
               <Settings className="w-5 h-5" />
             </button>
@@ -462,9 +462,9 @@ export const SwapInterface = ({
             )}
           </div>
           <div className="glass-card p-4 rounded-2xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
               <TokenSearch selectedToken={fromToken} onSelectToken={handleFromTokenSelect} />
-              <div className="flex-1 text-left sm:text-right w-full">
+              <div className="flex-1 min-w-0 text-left sm:text-right w-full">
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -481,28 +481,28 @@ export const SwapInterface = ({
             </div>
             {/* Percentage Buttons */}
             {connected && publicKey && fromBalance > 0 && (
-              <div className="flex gap-2 mt-3">
+              <div className="grid grid-cols-4 gap-2 mt-3">
                 <button
                   onClick={() => handlePercentageClick(0.25)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
                 >
                   25%
                 </button>
                 <button
                   onClick={() => handlePercentageClick(0.5)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
                 >
                   50%
                 </button>
                 <button
                   onClick={() => handlePercentageClick(0.75)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted transition-all"
                 >
                   75%
                 </button>
                 <button
                   onClick={() => handlePercentageClick(1)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-primary to-secondary text-white transition-all"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-primary to-secondary text-white transition-all"
                 >
                   MAX
                 </button>
@@ -512,7 +512,7 @@ export const SwapInterface = ({
         </div>
 
         {/* Swap Button */}
-        <div className="flex justify-center -my-2 relative z-20">
+        <div className="flex justify-center my-2 sm:-my-2 relative z-20">
           <button
             onClick={handleSwapTokens}
             className="p-3 glass-card rounded-xl hover:scale-110 hover:rotate-180 transition-all duration-300 hover:glow-effect"
@@ -525,9 +525,9 @@ export const SwapInterface = ({
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Buying</label>
           <div className="glass-card p-4 rounded-2xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
               <TokenSearch selectedToken={toToken} onSelectToken={handleToTokenSelect} />
-              <div className="flex-1 text-left sm:text-right w-full">
+              <div className="flex-1 min-w-0 text-left sm:text-right w-full">
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -550,7 +550,7 @@ export const SwapInterface = ({
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Slippage Tolerance</span>
             <div className="flex items-center gap-2">
-              {['0.1', '0.5', '1.0'].map((value) => (
+              {['0.1', '1.0'].map((value) => (
                 <button
                   key={value}
                   onClick={() => setSlippage(value)}

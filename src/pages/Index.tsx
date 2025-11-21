@@ -9,7 +9,7 @@ const Index = () => {
       <PegasusAnimation />
       <Navigation />
 
-      <div className="relative z-10 container mx-auto px-4 pt-24 md:pt-32 pb-8">
+      <div className="relative z-10 container mx-auto px-2 sm:px-4 pt-24 md:pt-32 pb-8">
         {/* Main Swap Interface */}
         <div className="flex justify-center items-center px-2 sm:px-0">
           <SwapInterface />
